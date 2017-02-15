@@ -1,10 +1,13 @@
 #include "mainwindow.h"
+#include "generatedwindow.h"
 
-#include <QGroupBox>
 #include <QFormLayout>
 #include <QBoxLayout>
+#include <QMessageBox>
 
 MainWindow::MainWindow() {
+  setWindowTitle("Zero Class Generator");
+
   // Creation of the class definition box
   QGroupBox *classDefinition = new QGroupBox("Class definition");
   m_name = new QLineEdit;
@@ -32,8 +35,8 @@ MainWindow::MainWindow() {
   options->setLayout(formLayout2);
 
   // Creation of the comments box which is facultative
-  QGroupBox *comments = new QGroupBox("Add comments");
-  comments->setCheckable(true);
+  m_addComments = new QGroupBox("Add comments");
+  m_addComments->setCheckable(true);
 
   m_author = new QLineEdit;
   m_date = new QDateEdit(QDate::currentDate());
@@ -44,8 +47,7 @@ MainWindow::MainWindow() {
   formLayout3->addRow("Creation date:", m_date);
   formLayout3->addRow("Class role:", m_role);
 
-  comments->setLayout(formLayout3);
-
+  m_addComments->setLayout(formLayout3);
 
   // Creation of quit and generate buttons
   m_generateButton = new QPushButton("Generate");
@@ -62,7 +64,7 @@ MainWindow::MainWindow() {
   QVBoxLayout *layout = new QVBoxLayout;
   layout->addWidget(classDefinition);
   layout->addWidget(options);
-  layout->addWidget(comments);
+  layout->addWidget(m_addComments);
   layout->addLayout(layout4, Qt::AlignCenter);
 
   setLayout(layout);
@@ -80,10 +82,63 @@ MainWindow::~MainWindow() {
   delete m_author;
   delete m_date;
   delete m_role;
+  delete m_addComments;
   delete m_generateButton;
   delete m_quitButton;
 }
 
 void MainWindow::generateCode() {
+  if (m_name->text().isEmpty()) {
+    QMessageBox::critical(this, "Error", "Please enter a class name");
+    return;
+  }
 
+  QString code;
+
+  if (m_addComments->isChecked()) {
+    if (!m_author->text().isEmpty()) {
+      code += "/*\nAuthor: " + m_author->text() + "\n";
+    } else {
+      code += "/*\nAuthor: unknown" + m_author->text() + "\n";
+    }
+
+    code += "Creation date: " + m_date->date().toString(Qt::ISODate) + "\n";
+
+    if (!m_role->toPlainText().isEmpty()) {
+      code += "Role:\n" + m_role->toPlainText() + "\n";
+    }
+    code += "*/\n\n";
+  }
+
+  if (m_protection->isChecked()) {
+    code += "#ifndef " + m_name->text().toUpper() + "_H\n";
+    code += "#define " + m_name->text().toUpper() + "_H\n\n";
+  }
+
+  code += "class " + m_name->text();
+
+  if (!m_superclass->text().isEmpty()) {
+    code += " : public " + m_superclass->text();
+  }
+
+  code += " {\n\n\tpublic:\n";
+
+  if (m_generateConstructor->isChecked()) {
+    code += "\t\t" + m_name->text() + "();\n";
+  }
+
+  if (m_generateDestructor->isChecked()) {
+    code += "\t\t~" + m_name->text() + "();\n";
+  }
+
+  code += "\n\tprotected:\n";
+  code += "\n\tprivate:\n";
+  code += "\n};\n\n";
+
+  if (m_protection->isChecked()) {
+    code += "#endif\n";
+  }
+
+  GeneratedWindow *generatedWindow = new GeneratedWindow(code, this);
+  generatedWindow->exec();
 }
