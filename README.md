@@ -8,8 +8,8 @@ Auteur
 
 Compile
 
-	  qmake
-    make
+	qmake  
+    	make
 
 Execute
 
